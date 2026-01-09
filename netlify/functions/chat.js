@@ -1,57 +1,67 @@
 // netlify/functions/chat.js
 
 export const handler = async (event, context) => {
+    // 1. POST 요청만 허용
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    const apiKey = "sk-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiLsobDshLHtmLgiLCJVc2VyTmFtZSI6IuyhsOyEse2YuCIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxOTMwNDY4OTc2NzY5MzcyNjkyIiwiUGhvbmUiOiIiLCJHcm91cElEIjoiMTkzMDQ2ODk3Njc1MjU5NTQ3NiIsIlBhZ2VOYW1lIjoiIiwiTWFpbCI6InNoYWluMTkxMkBnbWFpbC5jb20iLCJDcmVhdGVUaW1lIjoiMjAyNS0xMS0xMSAxNzozNzozOSIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.ZSETgeKKWyivl2ve0lVQMtaW0DTuqEhR04QprS65MQxdcnc-cFNZTn-iCGc1OikC4ITiN5zhcg1z90eLKjGTUJiIEGhIV4jXlKpG1y9HPBBrqg5NBRfmHBkq4WTtlyUthsqn8NvwRzE-eN-ht9Rn_I1DL70t3iGfflleidi40oeEaTHXtD7VlqO8lJ7oGAaZCuCIvils7HkPyPtafeFG8mgdaEbXLYuAr8tIvYz3jmFE80mbjNfCsqBHoBQTawCpsDms1zBnn7HxrAk_fREGYxgygJ-UzU7VPkZrYE5iuYKNNYy2JWekxsSr5mONHGiPw95Jn2WvBwb13gLUqtEDqg";
+    // 2. Netlify 환경 변수에서 OpenAI API 키 가져오기
+    // (주의: Netlify 설정에서 변수명을 OPENAI_API_KEY 로 새로 등록해야 합니다!)
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
-        console.error("API Key missing");
-        return { statusCode: 500, body: JSON.stringify({ error: 'Missing MINIMAX_API_KEY' }) };
+        console.error("Error: Missing OPENAI_API_KEY");
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Server configuration error: Missing API Key' })
+        };
     }
 
     try {
         const { messages } = JSON.parse(event.body);
-        console.log("Input messages:", JSON.stringify(messages)); // 1. 내가 보낸 메시지 확인
 
-        // MiniMax API 엔드포인트 (v1 호환)
-        const response = await fetch("https://api.minimax.chat/v1/text/chatcompletion_pro", {
+        // 3. OpenAI 요청 데이터 구성
+        const payload = {
+            model: "gpt-4o-mini", // 또는 "gpt-3.5-turbo", "gpt-4o"
+            messages: [
+                { role: "system", content: "You are a helpful assistant." },
+                ...messages
+            ],
+            max_tokens: 1000, // OpenAI는 'tokens_to_generate' 대신 'max_tokens'를 씁니다.
+            temperature: 0.7,
+        };
+
+        // 4. OpenAI API 호출
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({
-                model: "abab5.5-chat",
-                messages: [
-                    { role: "system", content: "You are a helpful assistant." },
-                    ...messages
-                ],
-                tokens_to_generate: 1024,
-                temperature: 0.9,
-            })
+            body: JSON.stringify(payload)
         });
 
-        // 응답을 텍스트로 먼저 받아서 로그로 찍어봅니다.
-        const responseText = await response.text();
-        console.log("MiniMax Raw Response:", responseText); // 2. MiniMax가 보낸 진짜 답변 확인
-
+        // 에러 처리
         if (!response.ok) {
-            throw new Error(`API returned ${response.status}: ${responseText}`);
+            const errorText = await response.text();
+            console.error("OpenAI API Error:", errorText);
+            throw new Error(`OpenAI responded with ${response.status}: ${errorText}`);
         }
 
+        const data = await response.json();
+
+        // 5. 프론트엔드로 결과 반환
         return {
             statusCode: 200,
-            body: responseText // 그대로 프론트엔드에 전달
+            body: JSON.stringify(data)
         };
 
     } catch (err) {
-        console.error("Function Error:", err);
+        console.error("Function execution error:", err);
         return {
             statusCode: 502,
-            body: JSON.stringify({ error: err.message })
+            body: JSON.stringify({ error: "Failed to fetch response from OpenAI", details: err.message })
         };
     }
 };
