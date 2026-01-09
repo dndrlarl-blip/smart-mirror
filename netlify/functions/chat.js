@@ -7,6 +7,9 @@ export const handler = async (event, context) => {
 
     const apiKey = process.env.MINIMAX_API_KEY;
 
+    console.log(`Key Length: ${apiKey ? apiKey.length : 0}`);
+    console.log(`Key Check: [${apiKey}]`); // 대괄호로 감싸서 공백 유무 확인
+
     if (!apiKey) {
         console.error("API Key missing");
         return { statusCode: 500, body: JSON.stringify({ error: 'Missing MINIMAX_API_KEY' }) };
