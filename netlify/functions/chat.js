@@ -1,39 +1,33 @@
 // netlify/functions/chat.js
 
 export const handler = async (event, context) => {
-    // 1. POST 요청만 허용
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
 
-    // 2. Netlify 환경 변수에서 OpenAI API 키 가져오기
-    // (주의: Netlify 설정에서 변수명을 OPENAI_API_KEY 로 새로 등록해야 합니다!)
-    const apiKey = process.env.OPENAI_API_KEY;
+    // 👇 1. Groq 키를 가져옵니다. (Netlify에 GROQ_API_KEY 등록 필수)
+    const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
-        console.error("Error: Missing OPENAI_API_KEY");
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: 'Server configuration error: Missing API Key' })
-        };
+        return { statusCode: 500, body: JSON.stringify({ error: 'Missing GROQ_API_KEY' }) };
     }
 
     try {
         const { messages } = JSON.parse(event.body);
 
-        // 3. OpenAI 요청 데이터 구성
         const payload = {
-            model: "gpt-4o-mini", // 또는 "gpt-3.5-turbo", "gpt-4o"
+            // 👇 2. 모델명을 Groq에서 제공하는 무료 모델로 변경 (Llama 3 8B)
+            model: "llama3-8b-8192",
             messages: [
                 { role: "system", content: "You are a helpful assistant." },
                 ...messages
             ],
-            max_tokens: 1000, // OpenAI는 'tokens_to_generate' 대신 'max_tokens'를 씁니다.
+            // max_tokens: 1000, // 필요하면 주석 해제
             temperature: 0.7,
         };
 
-        // 4. OpenAI API 호출
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        // 👇 3. 요청 주소(URL)를 Groq로 변경
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
@@ -42,16 +36,14 @@ export const handler = async (event, context) => {
             body: JSON.stringify(payload)
         });
 
-        // 에러 처리
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("OpenAI API Error:", errorText);
-            throw new Error(`OpenAI responded with ${response.status}: ${errorText}`);
+            console.error("Groq API Error:", errorText);
+            throw new Error(`Groq responded with ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
 
-        // 5. 프론트엔드로 결과 반환
         return {
             statusCode: 200,
             body: JSON.stringify(data)
@@ -61,7 +53,7 @@ export const handler = async (event, context) => {
         console.error("Function execution error:", err);
         return {
             statusCode: 502,
-            body: JSON.stringify({ error: "Failed to fetch response from OpenAI", details: err.message })
+            body: JSON.stringify({ error: "Failed to fetch response", details: err.message })
         };
     }
 };
