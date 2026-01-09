@@ -8,48 +8,47 @@ export const handler = async (event, context) => {
     const apiKey = process.env.MINIMAX_API_KEY;
 
     if (!apiKey) {
+        console.error("API Key missing");
         return { statusCode: 500, body: JSON.stringify({ error: 'Missing MINIMAX_API_KEY' }) };
     }
 
     try {
         const { messages } = JSON.parse(event.body);
+        console.log("Input messages:", JSON.stringify(messages)); // 1. 내가 보낸 메시지 확인
 
-        const payload = {
-            model: "abab5.5-chat",
-            messages: [
-                { role: "system", content: "You are a helpful assistant." },
-                ...messages
-            ],
-            tokens_to_generate: 1024,
-            temperature: 0.9,
-            top_p: 0.95,
-        };
-
-        // 🔴 수정됨: GroupId 파라미터 삭제 (기본값 사용)
+        // MiniMax API 엔드포인트 (v1 호환)
         const response = await fetch("https://api.minimax.chat/v1/text/chatcompletion_pro", {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                model: "abab5.5-chat",
+                messages: [
+                    { role: "system", content: "You are a helpful assistant." },
+                    ...messages
+                ],
+                tokens_to_generate: 1024,
+                temperature: 0.9,
+            })
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("MiniMax API Error:", errorText); // 로그에 에러 출력
-            throw new Error(`API returned ${response.status}: ${errorText}`);
-        }
+        // 응답을 텍스트로 먼저 받아서 로그로 찍어봅니다.
+        const responseText = await response.text();
+        console.log("MiniMax Raw Response:", responseText); // 2. MiniMax가 보낸 진짜 답변 확인
 
-        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(`API returned ${response.status}: ${responseText}`);
+        }
 
         return {
             statusCode: 200,
-            body: JSON.stringify(data)
+            body: responseText // 그대로 프론트엔드에 전달
         };
 
     } catch (err) {
-        console.error("Function execution error:", err);
+        console.error("Function Error:", err);
         return {
             statusCode: 502,
             body: JSON.stringify({ error: err.message })
