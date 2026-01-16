@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Messages are required' });
   }
 
-  const apiKey = process.env.MiniMax_LLM_API_KEY;
+  const apiKey = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiLsobDshLHtmLgiLCJVc2VyTmFtZSI6IuyhsOyEse2YuCIsIkFjY291bnQiOiIiLCJTdWJqZWN0SUQiOiIxOTMwNDY4OTc2NzY5MzcyNjkyIiwiUGhvbmUiOiIiLCJHcm91cElEIjoiMTkzMDQ2ODk3Njc1MjU5NTQ3NiIsIlBhZ2VOYW1lIjoiIiwiTWFpbCI6InNoYWluMTkxMkBnbWFpbC5jb20iLCJDcmVhdGVUaW1lIjoiMjAyNS0xMS0xMSAxNzozNzozOSIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.ZSETgeKKWyivl2ve0lVQMtaW0DTuqEhR04QprS65MQxdcnc-cFNZTn-iCGc1OikC4ITiN5zhcg1z90eLKjGTUJiIEGhIV4jXlKpG1y9HPBBrqg5NBRfmHBkq4WTtlyUthsqn8NvwRzE-eN-ht9Rn_I1DL70t3iGfflleidi40oeEaTHXtD7VlqO8lJ7oGAaZCuCIvils7HkPyPtafeFG8mgdaEbXLYuAr8tIvYz3jmFE80mbjNfCsqBHoBQTawCpsDms1zBnn7HxrAk_fREGYxgygJ-UzU7VPkZrYE5iuYKNNYy2JWekxsSr5mONHGiPw95Jn2WvBwb13gLUqtEDqg";
   const baseUrl = process.env.MINIMAX_BASE_URL || 'https://api.minimax.chat/v1';
   // Use model from body or default
   const modelName = model || process.env.MINIMAX_MODEL_NAME || 'abab6.5s-chat';
