@@ -10,9 +10,9 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.MiniMax_LLM_API_KEY;
-  const baseUrl = process.env.MINIMAX_BASE_URL || 'https://api.minimax.io/v1';
+  const baseUrl = 'https://api.minimax.io/v1';
   // Use model from body or default
-  const modelName = model || process.env.MINIMAX_MODEL_NAME || 'MiniMax-Text-01';
+  const modelName = 'MiniMax-Text-01';
 
   try {
     const response = await fetch(`${baseUrl}/text/chatcompletion_v2`, {
